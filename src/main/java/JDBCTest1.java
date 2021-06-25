@@ -9,17 +9,36 @@ import java.sql.*;
 import java.util.Properties;
 import java.util.UUID;
 
-// 主要测试jdbc相关功能
-public class JDBCTest {
+// 主要测试jdbc如何获得连接，并基于连接做一些操作
+// 由于只连接h2，所以只需要一个依赖
+// <dependency>
+//            <groupId>com.h2database</groupId>
+//            <artifactId>h2</artifactId>
+//            <version>1.4.200</version>
+//</dependency>
+public class JDBCTest1 {
 
     static String url = "";
     static String user = "";
     static String password = "";
 
+    public static void main(String[] args) {
+        init();
+        try {
+            test1();
+            test2();
+            test3();
+            test4();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
     // 创建一个H2数据库，填充一些数据，用于测试
     private static void init() {
+        Utils.outputStartSeparator("init");
         try {
-            InputStream resourceAsStream = JDBCTest.class.getClassLoader().getResourceAsStream("jdbc.properties");
+            InputStream resourceAsStream = JDBCTest1.class.getClassLoader().getResourceAsStream("jdbc.properties");
             Properties properties = new Properties();
             properties.load(resourceAsStream);
             url = properties.getProperty("url");
@@ -48,10 +67,28 @@ public class JDBCTest {
             System.out.println("初始化失败." + e.getMessage());
         }
         System.out.println("初始化完成");
+        Utils.outputEndSeparator("init");
+    }
+
+    // 使用 Driver 直接获取连接
+    private static void test4() throws SQLException, IOException {
+        Utils.outputStartSeparator("test4");
+        Driver load = Driver.load();
+
+        InputStream resourceAsStream = JDBCTest1.class.getClassLoader().getResourceAsStream("jdbc.properties");
+        Properties properties = new Properties();
+        properties.load(resourceAsStream);
+
+        Connection connect = load.connect(url, properties);
+        System.out.println(connect.isClosed());
+        connect.close();
+        System.out.println(connect.isClosed());
+        Utils.outputEndSeparator("test4");
     }
 
     // 测试使用 DriverManager 获取连接
     private static void test1() throws SQLException {
+        Utils.outputStartSeparator("test1");
         Connection conn = DriverManager.getConnection(url, user, password);
         System.out.println(conn instanceof JdbcConnection);
         System.out.println(conn.isClosed());
@@ -62,10 +99,12 @@ public class JDBCTest {
         }
         conn.close();
         System.out.println(conn.isClosed());
+        Utils.outputEndSeparator("test1");
     }
 
     // 测试使用 DataSource 获取连接
     private static void test2() throws SQLException {
+        Utils.outputStartSeparator("test2");
         JdbcDataSource jdbcDataSource = new JdbcDataSource();
         jdbcDataSource.setURL(url);
         jdbcDataSource.setUser(user);
@@ -79,10 +118,12 @@ public class JDBCTest {
         }
         conn.close();
         System.out.println(conn.isClosed());
+        Utils.outputEndSeparator("test1");
     }
 
     // 测试使用 PooledDataSource 获取连接
     private static void test3() throws SQLException {
+        Utils.outputStartSeparator("test3");
         JdbcDataSource jdbcDataSource = new JdbcDataSource();
         jdbcDataSource.setURL(url);
         jdbcDataSource.setUser(user);
@@ -96,32 +137,7 @@ public class JDBCTest {
         // poolConnection如果关闭，conn.getConnection()将返回null
         conn.getConnection().close();
         System.out.println(conn.getConnection().isClosed());
+        Utils.outputEndSeparator("test3");
     }
 
-    // 使用 Driver 直接获取连接
-    private static void test4() throws SQLException, IOException {
-        Driver load = Driver.load();
-
-        InputStream resourceAsStream = JDBCTest.class.getClassLoader().getResourceAsStream("jdbc.properties");
-        Properties properties = new Properties();
-        properties.load(resourceAsStream);
-
-        Connection connect = load.connect(url, properties);
-        System.out.println(connect.isClosed());
-        connect.close();
-        System.out.println(connect.isClosed());
-    }
-
-
-    public static void main(String[] args) {
-        init();
-        try {
-//            test1();
-//            test2();
-//            test3();
-            test4();
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-    }
 }
