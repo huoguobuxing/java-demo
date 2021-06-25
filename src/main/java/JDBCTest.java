@@ -33,7 +33,7 @@ public class JDBCTest {
     }
 
     public static void test2() throws SQLException {
-        Connection conn = DriverManager.getConnection("jdbc:mysql://139.198.21.183:3460/website", "prnqa", "Comeon2019_prn");
+
     }
 
     public static void main(String[] args) {
