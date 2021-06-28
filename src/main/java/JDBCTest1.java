@@ -25,14 +25,91 @@ public class JDBCTest1 {
     public static void main(String[] args) {
         init();
         try {
-            test1();
-            test2();
-            test3();
-            test4();
+//            test1();
+//            test2();
+//            test3();
+//            test4();
+//            test5();
+//            test6();
+            test7();
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
     }
+
+    // 测试下 savePoint 用法
+    public static void test7() throws SQLException {
+        Connection conn = DriverManager.getConnection(url, user, password);
+        conn.setAutoCommit(false);
+        Statement stmt = conn.createStatement();
+        Savepoint sp1 = null;
+        Savepoint sp2 = null;
+        try {
+            //新增
+            stmt.executeUpdate("INSERT INTO USER_INFO VALUES('" + UUID.randomUUID() + "','test1','男')");
+            sp1 = conn.setSavepoint("sp1");
+            stmt.executeUpdate("INSERT INTO USER_INFO VALUES('" + UUID.randomUUID() + "','test2','男')");
+            sp2 = conn.setSavepoint("sp2");
+            int i = 0;
+            int j = 10 / i;
+            conn.commit();
+        } catch (Exception e) {
+            conn.rollback(sp1);
+            // 存在
+            ResultSet resultSet1 = stmt.executeQuery("SELECT * FROM USER_INFO WHERE name = 'test1'");
+            while (resultSet1.next()) {
+                System.out.println(resultSet1.getString("name"));
+            }
+
+            //不存在
+            ResultSet resultSet2 = stmt.executeQuery("SELECT * FROM USER_INFO WHERE name = 'test2'");
+            while (resultSet2.next()) {
+                System.out.println(resultSet2.getString("name"));
+            }
+        }
+    }
+
+    // 测试下正常事务，使用事务时，发生除零异常后，数据没有插入成功，符合预期
+    public static void test6() throws SQLException {
+
+        Connection conn = DriverManager.getConnection(url, user, password);
+        conn.setAutoCommit(false);
+        Statement stmt = conn.createStatement();
+        try {
+            //新增
+            stmt.executeUpdate("INSERT INTO USER_INFO VALUES('" + UUID.randomUUID() + "','test','男')");
+
+            int i = 0;
+            int j = 10 / i;
+            conn.commit();
+        } catch (Exception e) {
+            conn.rollback();
+            ResultSet resultSet = stmt.executeQuery("SELECT * FROM USER_INFO WHERE name = 'test'");
+            while (resultSet.next()) {
+                System.out.println(resultSet.getString("name"));
+            }
+        }
+    }
+
+    // 测试下正常事务，不使用事务时，发生除零异常后，数据依然插入成功
+    public static void test5() throws SQLException {
+
+        Connection conn = DriverManager.getConnection(url, user, password);
+        Statement stmt = conn.createStatement();
+        try {
+            //新增
+            stmt.executeUpdate("INSERT INTO USER_INFO VALUES('" + UUID.randomUUID() + "','test','男')");
+
+            int i = 0;
+            int j = 10 / i;
+        } catch (Exception e) {
+            ResultSet resultSet = stmt.executeQuery("SELECT * FROM USER_INFO WHERE name = 'test'");
+            while (resultSet.next()) {
+                System.out.println(resultSet.getString("name"));
+            }
+        }
+    }
+
 
     // 创建一个H2数据库，填充一些数据，用于测试
     private static void init() {
