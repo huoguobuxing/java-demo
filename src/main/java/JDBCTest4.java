@@ -1,13 +1,26 @@
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.pool.ProxyConnection;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
+import org.springframework.jdbc.support.JdbcTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+
+import static org.springframework.transaction.TransactionDefinition.PROPAGATION_MANDATORY;
+import static org.springframework.transaction.TransactionDefinition.PROPAGATION_SUPPORTS;
 
 // 即使用上了连接池，也仅仅是解决了性能问题，要想提高开发效率，还是得让开发人员专心写业务逻辑
 // 少处理 connection , statement ,resultset , 释放资源等工作
@@ -61,14 +74,89 @@ public class JDBCTest4 {
         Utils.outputEndSeparator("init");
     }
 
-    public static void test1() {
+    // 测试下事务传播策略 PROPAGATION_SUPPORTS , 不在乎外层有没有事务，有就用，没有就不用
+    public static void test2() throws SQLException {
+        HikariDataSource basicDataSource = new HikariDataSource();
+        basicDataSource.setJdbcUrl(url);
+        basicDataSource.setUsername(user);
+        basicDataSource.setPassword(password);
 
+        PlatformTransactionManager transactionManager = new JdbcTransactionManager(basicDataSource);
+        TransactionTemplate transactionTemplate1 = new TransactionTemplate(transactionManager);
+        transactionTemplate1.setPropagationBehavior(PROPAGATION_SUPPORTS);
+        transactionTemplate1.execute(new TransactionCallbackWithoutResult() {
+            @Override
+            protected void doInTransactionWithoutResult(TransactionStatus status) {
+                System.out.println(status);
+                try {
+                    JdbcTemplate jdbcTemplate = new JdbcTemplate(basicDataSource);
+                    jdbcTemplate.execute("INSERT INTO USER_INFO VALUES('" + UUID.randomUUID() + "','test1','男')");
+                    int i = 0;
+                    TransactionTemplate transactionTemplate2 = new TransactionTemplate(transactionManager);
+                    transactionTemplate2.setPropagationBehavior(PROPAGATION_SUPPORTS);
+                    transactionTemplate2.execute(new TransactionCallbackWithoutResult() {
+                        @Override
+                        protected void doInTransactionWithoutResult(TransactionStatus status) {
+                            System.out.println(status);
+                            try {
+                                JdbcTemplate jdbcTemplate = new JdbcTemplate(basicDataSource);
+                                jdbcTemplate.execute("INSERT INTO USER_INFO VALUES('" + UUID.randomUUID() + "','test2','男')");
+                                int i = 0;
+                                int j = 10 / i;
+                            } catch (Exception e) {
+                                status.setRollbackOnly();
+                            }
+                        }
+                    });
+
+                } catch (Exception e) {
+                    status.setRollbackOnly();
+                }
+            }
+        });
+
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(basicDataSource);
+        List<Map<String, Object>> maps = jdbcTemplate.queryForList("SELECT * FROM USER_INFO WHERE name = 'test1' or name = 'test1'");
+        for (Map<String, Object> map : maps) {
+            System.out.println(map.get("name"));
+        }
+    }
+
+    // 测试下正常事务，使用事务时，发生除零异常后，数据没有插入成功，符合预期
+    public static void test1() throws SQLException {
+        HikariDataSource basicDataSource = new HikariDataSource();
+        basicDataSource.setJdbcUrl(url);
+        basicDataSource.setUsername(user);
+        basicDataSource.setPassword(password);
+
+        PlatformTransactionManager transactionManager = new JdbcTransactionManager(basicDataSource);
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+
+        transactionTemplate.execute(new TransactionCallbackWithoutResult() {
+            @Override
+            protected void doInTransactionWithoutResult(TransactionStatus status) {
+                try {
+                    JdbcTemplate jdbcTemplate = new JdbcTemplate(basicDataSource);
+                    jdbcTemplate.execute("INSERT INTO USER_INFO VALUES('" + UUID.randomUUID() + "','test','男')");
+                    int i = 0;
+                    int j = 10 / i;
+                } catch (Exception e) {
+                    status.setRollbackOnly();
+                }
+            }
+        });
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(basicDataSource);
+        List<Map<String, Object>> maps = jdbcTemplate.queryForList("SELECT * FROM USER_INFO WHERE name = 'test'");
+        for (Map<String, Object> map : maps) {
+            System.out.println(map.get("name"));
+        }
     }
 
     public static void main(String[] args) {
         init();
         try {
-            test1();
+//            test1();
+            test2();
         } catch (Exception e) {
             e.printStackTrace();
         }
