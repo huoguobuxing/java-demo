@@ -19,8 +19,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
-import static org.springframework.transaction.TransactionDefinition.PROPAGATION_MANDATORY;
-import static org.springframework.transaction.TransactionDefinition.PROPAGATION_SUPPORTS;
+import static org.springframework.transaction.TransactionDefinition.*;
 
 // 即使用上了连接池，也仅仅是解决了性能问题，要想提高开发效率，还是得让开发人员专心写业务逻辑
 // 少处理 connection , statement ,resultset , 释放资源等工作
@@ -83,7 +82,7 @@ public class JDBCTest4 {
 
         PlatformTransactionManager transactionManager = new JdbcTransactionManager(basicDataSource);
         TransactionTemplate transactionTemplate1 = new TransactionTemplate(transactionManager);
-        transactionTemplate1.setPropagationBehavior(PROPAGATION_SUPPORTS);
+        transactionTemplate1.setPropagationBehavior(PROPAGATION_REQUIRES_NEW);
         transactionTemplate1.execute(new TransactionCallbackWithoutResult() {
             @Override
             protected void doInTransactionWithoutResult(TransactionStatus status) {
@@ -93,7 +92,7 @@ public class JDBCTest4 {
                     jdbcTemplate.execute("INSERT INTO USER_INFO VALUES('" + UUID.randomUUID() + "','test1','男')");
                     int i = 0;
                     TransactionTemplate transactionTemplate2 = new TransactionTemplate(transactionManager);
-                    transactionTemplate2.setPropagationBehavior(PROPAGATION_SUPPORTS);
+                    transactionTemplate2.setPropagationBehavior(PROPAGATION_REQUIRES_NEW);
                     transactionTemplate2.execute(new TransactionCallbackWithoutResult() {
                         @Override
                         protected void doInTransactionWithoutResult(TransactionStatus status) {
