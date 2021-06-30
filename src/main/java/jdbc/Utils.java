@@ -1,3 +1,5 @@
+package jdbc;
+
 public class Utils {
     public static void outputStartSeparator(String name) {
         String str = "*************** start " + name + " ****************";

@@ -1,3 +1,5 @@
+package jdbc;
+
 import org.h2.Driver;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.jdbcx.JdbcDataSource;

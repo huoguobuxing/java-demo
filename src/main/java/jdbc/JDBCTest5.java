@@ -1,3 +1,5 @@
+package jdbc;
+
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
