@@ -8,20 +8,21 @@ import java.lang.InstantiationException;
 import java.lang.Integer;
 import java.lang.String;
 import java.lang.System;
+import java.sql.DriverManager;
 
 public class Test {
     public static void main(String[] args) throws java.lang.ClassNotFoundException, IllegalAccessException, InstantiationException {
         try {
 //            test1();
 //            test2();
-            test3();
+//            test3();
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
 
     }
 
-    static void test3(){
+    static void test3() {
         ClassLoader classLoader = Test.class.getClassLoader();
         System.out.println(classLoader);
         ClassLoader parent = classLoader.getParent();
