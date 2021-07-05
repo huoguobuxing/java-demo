@@ -1,5 +1,7 @@
 package classloader;
 
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
+
 import java.lang.*;
 import java.lang.ClassLoader;
 import java.lang.Exception;
@@ -16,12 +18,18 @@ public class Test {
 //            test1();
 //            test2();
 //            test3();
+            test4();
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
 
     }
 
+    static void test4() throws ClassNotFoundException {
+        Class c1 = Integer.class;
+        Class<?> c2 = Test.class.getClassLoader().loadClass("java.lang.Integer");
+        System.out.println(c2 == c1);
+    }
     static void test3() {
         ClassLoader classLoader = Test.class.getClassLoader();
         System.out.println(classLoader);
